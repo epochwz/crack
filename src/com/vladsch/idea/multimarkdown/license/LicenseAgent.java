@@ -155,7 +155,9 @@ public class LicenseAgent {
         return featureList;
     }
 
+    // 调用默认构造器
     public LicenseAgent(LicenseAgent other) {
+        this();
         copyFrom(other);
     }
 
@@ -192,44 +194,14 @@ public class LicenseAgent {
         return tryPageURL;
     }
 
-    public void setLicenseCode(String license_code) {
-        String trimmed = license_code.trim();
-        if (!trimmed.equals(this.license_code == null ? "" : this.license_code)) {
-            this.license_code = trimmed;
-            setActivationCode(null);
-        }
-    }
+    // 不设置
+    public void setLicenseCode(String license_code) { }
 
-    public void setLicenseActivationCodes(String license_code, String activation_code) {
-        String trimmed = license_code.trim();
-        if (!trimmed.equals(this.license_code == null ? "" : this.license_code)) {
-            this.license_code = trimmed;
-            setActivationCode(activation_code);
-        } else {
-            setActivationCode(activation_code);
-        }
-    }
+    // 不设置
+    public void setLicenseActivationCodes(String license_code, String activation_code) { }
 
-    public void setActivationCode(String activation_code) {
-        if (activation_code != null) {
-            String trimmed = activation_code.trim();
-            if (!trimmed.equals(this.activation_code == null ? "" : this.activation_code)) {
-                this.activation_code = trimmed;
-                this.json = null;
-                this.activation = null;
-
-                if (!isValidActivation()) {
-                    this.activation_code = null;
-                    this.json = null;
-                    this.activation = null;
-                }
-            }
-        } else {
-            this.activation_code = null;
-            this.json = null;
-            this.activation = null;
-        }
-    }
+    // 不设置
+    public void setActivationCode(String activation_code) { }
 
     @NotNull
     public static String getLicenseURL() {
@@ -241,9 +213,10 @@ public class LicenseAgent {
         return license_code != null ? license_code : "";
     }
 
+    // 获取过期时间
     @Nullable
     public String getLicenseExpires() {
-        return license_expires;
+        return "2025-01-01";
     }
 
     @Nullable
@@ -277,209 +250,42 @@ public class LicenseAgent {
         return lastCommunicationsError;
     }
 
+    // 添加功能
     public LicenseAgent() {
-
+        featureList = new HashMap<>();
+        featureList.put("enhanced", 1);
+        featureList.put("development", 2);
     }
 
+    // 获取注册码
     public boolean getLicenseCode(LicenseRequest licenseRequest) {
-        licenseRequest.agent_signature = agent_signature;
-        String[] useLicenseUrls = new String[] { licenseURL, alt1LicenseURL, alt2LicenseURL };
-        InputStream inputStream = null;
-        String protocol = isSecureConnection ? "https://" : "http://";
-
-        for (String licenseUrl : useLicenseUrls) {
-            try {
-                final String useLicenseUrl = protocol + licenseUrl;
-                final HttpConfigurable httpConfigurable = ApplicationManager.getApplication().getComponent(HttpConfigurable.class);
-                final URLConnection urlConnection = httpConfigurable != null ? httpConfigurable.openConnection(useLicenseUrl) : new URL(useLicenseUrl).openConnection();
-
-                urlConnection.setDoOutput(true);
-                urlConnection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                urlConnection.connect();
-                final OutputStream outputStream = urlConnection.getOutputStream();
-                if (LOG_AGENT_INFO) System.out.println(licenseRequest.toJsonString());
-                outputStream.write(licenseRequest.toJsonString().getBytes(StandardCharsets.UTF_8));
-                outputStream.flush();
-                remove_license = false;
-
-                try {
-                    inputStream = urlConnection.getInputStream();
-                    lastCommunicationsError = null;
-                    break;
-                } catch (IOException e) {
-                    lastCommunicationsError = e.getMessage();
-                } finally {
-                    outputStream.close();
-                }
-            } catch (Throwable e) {
-                lastCommunicationsError = e.getMessage();
-            }
-        }
-
-        if (inputStream == null) return false;
-
-        lastCommunicationsError = null;
-
-        //BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        //StringBuilder sb = new StringBuilder();
-        //
-        //String line = null;
-        //try {
-        //    while ((line = reader.readLine()) != null) {
-        //        sb.append(line).append('\n');
-        //    }
-        //} catch (IOException e) {
-        //    e.printStackTrace();
-        //} finally {
-        //    try {
-        //        inputStream.close();
-        //    } catch (IOException e) {
-        //        e.printStackTrace();
-        //    }
-        //}
-        JsonReader jsonReader = Json.createReader(inputStream);
-        json = jsonReader.readObject();
-        String status = json.getString(STATUS, "");
-        String message = json.getString(MESSAGE, "");
-        if (status.equals(STATUS_OK)) {
-            if ((licenseRequest.hasLicenseCode() || json.containsKey(LICENSE_CODE)) && json.containsKey(ACTIVATION_CODE)) {
-                if (json.containsKey(LICENSE_CODE)) this.license_code = json.getString(LICENSE_CODE);
-                this.activation_code = json.getString(ACTIVATION_CODE);
-                return true;
-            } else {
-                if (LOG_AGENT_INFO) System.out.println("License server did not reply with a valid response");
-            }
-        } else {
-            if (status.equals(STATUS_DISABLE)) {
-                // remove license information from this plugin
-                if (LOG_AGENT_INFO) System.out.println("License server requested license removal from this host");
-                license_code = null;
-                activation_code = null;
-                activation = null;
-                remove_license = true;
-                status = STATUS_ERROR;
-            }
-            if (LOG_AGENT_INFO) System.out.println("License server replied with status: " + status + ", message: " + message);
-        }
-
-        return false;
+        return true;
     }
 
+    // 是否有效 LICENSE
     public boolean isValidLicense() {
-        if (license_code != null) {
-            int headerPos = license_code.indexOf(licenseHeader);
-            int footerPos = license_code.lastIndexOf(licenseFooter);
-            if (headerPos >= 0 && footerPos > headerPos) {
-                return true;
-            }
-
-            headerPos = license_code.indexOf(altLicenseHeader);
-            footerPos = license_code.lastIndexOf(altLicenseFooter);
-            return headerPos >= 0 && footerPos > headerPos;
-        }
-        return false;
+        return true;
     }
 
+    // 是否有效注册码
     public boolean isValidActivation() {
-        if (activation_code != null) {
-            if (activation != null) {
-                if (isActivationExpired()) {
-                    activation = null;
-                    activation_code = null;
-                    return false;
-                }
-            }
-
-            if (activation == null) {
-                String useActivationHeader = activationHeader;
-                int headerPos = activation_code.indexOf(useActivationHeader);
-                int footerPos = activation_code.lastIndexOf(activationFooter);
-
-                if (!(headerPos >= 0 && footerPos > headerPos)) {
-                    useActivationHeader = altActivationHeader;
-                    headerPos = activation_code.indexOf(useActivationHeader);
-                    footerPos = activation_code.lastIndexOf(altActivationFooter);
-                }
-
-                if (headerPos >= 0 && footerPos > headerPos) {
-                    try {
-                        LicenseKey licenseKey = new LicenseKey(license_pub);
-                        String activationJson = licenseKey.decrypt(activation_code.substring(headerPos + useActivationHeader.length(), footerPos));
-
-                        if (activationJson != null) {
-                            byte[] bytes = activationJson.getBytes(StandardCharsets.UTF_8);
-                            InputStream stream = new ByteArrayInputStream(bytes);
-                            JsonReader jsonReader = Json.createReader(stream);
-                            activation = jsonReader.readObject();
-                        }
-                    } catch (NoSuchPaddingException ignored) {
-                    } catch (NoSuchAlgorithmException ignored) {
-                    } catch (IOException ignored) {
-                    } catch (InvalidKeySpecException ignored) {
-                    } catch (Exception ignored) {
-                        int tmp = 0;
-                    }
-                }
-            }
-
-            if (activation != null && activation.containsKey(AGENT_SIGNATURE) && activation.getString(AGENT_SIGNATURE, "").equals(agent_signature)
-                    && activation.containsKey(LICENSE_EXPIRES)
-                    && activation.containsKey(LICENSE_TYPE)
-                    && activation.containsKey(LICENSE_FEATURES)
-                    && activation.containsKey(LICENSE_FEATURE_LIST)
-                    && activation.containsKey(PRODUCT_VERSION)
-                    && activation.containsKey(HOST_NAME)
-                    && activation.containsKey(HOST_PRODUCT)
-                    && activation.getString(LICENSE_TYPE) != null
-                    && activation.getInt(LICENSE_FEATURES) != 0
-                    ) {
-                try {
-                    license_expires = activation.getString(LICENSE_EXPIRES);
-                    product_version = activation.getString(PRODUCT_VERSION);
-
-                    if (activation.containsKey(PRODUCT_RELEASED_AT)) {
-                        product_released_at = activation.getString(PRODUCT_RELEASED_AT);
-                    } else {
-                        product_released_at = "";
-                    }
-
-                    license_type = activation.getString(LICENSE_TYPE);
-                    license_features = activation.getInt(LICENSE_FEATURES);
-                    JsonObject feature_list = activation.getJsonObject(LICENSE_FEATURE_LIST);
-                    featureList = new HashMap<String, Integer>();
-                    for (Map.Entry<String, JsonValue> feature : feature_list.entrySet()) {
-                        if (feature.getValue() instanceof JsonNumber) {
-                            featureList.put(feature.getKey(), ((JsonNumber) feature.getValue()).intValue());
-                        }
-                    }
-                    return true;
-                } catch (JsonException e) {
-                    if (LOG_AGENT_INFO) System.out.println("Activation JsonException " + e);
-                } catch (ClassCastException e) {
-                    if (LOG_AGENT_INFO) System.out.println("Activation ClassCastException " + e);
-                } catch (Exception e) {
-                    if (LOG_AGENT_INFO) System.out.println("Activation Exception " + e);
-                }
-            }
-        }
-        return false;
+        return true;
     }
 
+    // LICENSE 类型
     @NotNull
     public String getLicenseType() {
-        return license_type;
+        return LICENSE_TYPE_LICENSE;
     }
-
+    // LICENSE 功能
     public int getLicenseFeatures() {
-        return license_features;
+        return 4;
     }
 
+    // 过期时间
     @NotNull
     public String getLicenseExpiration() {
-        if (activation != null && activation.containsKey(LICENSE_EXPIRES)) {
-            return activation.getString(LICENSE_EXPIRES);
-        }
-        return "";
+        return "2025-01-01";
     }
 
     @NotNull
@@ -498,28 +304,19 @@ public class LicenseAgent {
         return "";
     }
 
+    // 注册日期
     @NotNull
     public String getActivatedOn() {
         if (activation != null && activation.containsKey(ACTIVATED_ON)) {
             return activation.getString(ACTIVATED_ON);
         }
-        return "";
+        return "2019-01-01";
     }
 
+    // 剩余天数
     public int getLicenseExpiringIn() {
         // see if the license expiration is more than i days away
-        if (activation != null && activation.containsKey(LICENSE_EXPIRES)) {
-            DateFormat df = new SimpleDateFormat(DATE_FORMAT);
-            try {
-                String expires = activation.getString(LICENSE_EXPIRES);
-                Date expiration = df.parse(expires);
-                Date today = new Date();
-                int days = (int) Math.floor((expiration.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                return days + 1;
-            } catch (ParseException ignored) {
-            }
-        }
-        return 0;
+        return 365*5;
     }
 
     public boolean getProductIsPerpetual() {
@@ -545,30 +342,14 @@ public class LicenseAgent {
         return var4;
     }
 
+    // 是否已过期
     public boolean isActivationExpired() {
         // see if the activation has expired
-        if (activation != null) {
-            if (product_version == null || !product_version.equals(MdPlugin.getProductVersion())
-                    //|| !getHostName().equals(LicenseRequest.getHostName())
-                    || !getHostProduct().equals(LicenseRequest.getHostProduct())
-                    ) {
-                return true;
-            }
+        return false;
+    }
 
-            if (activation.containsKey(ACTIVATION_EXPIRES)) {
-                DateFormat df = new SimpleDateFormat(DATE_FORMAT);
-                try {
-                    String expires = activation.getString(ACTIVATION_EXPIRES);
-                    Date expiration = df.parse(expires);
-                    Date today = new Date();
-                    int days = (int) floorDiv(expiration.getTime() - today.getTime(), (1000 * 60 * 60 * 24));
-                    return days < 0;
-                } catch (ParseException ignored) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return true;
+    // 执行获取 class 文件
+    public static void main(String[] args) {
+        System.out.println();
     }
 }
